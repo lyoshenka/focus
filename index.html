@@ -1,0 +1,274 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <!-- <meta name="referrer" content="origin-when-cross-origin"> -->
+
+  <meta name="viewport" content="initial-scale=1, width=device-width">
+  <title>Focus</title>
+
+  <link rel="stylesheet" href="/normalize.css">
+
+  <style>
+    html {
+      font-size: 10px; /* nice size for rem math */
+      margin-left: calc(100vw - 100%); /* jumping scrollbar fix */
+    }
+
+    /* border-box ftw! */
+    html { box-sizing: border-box; } *, *:before, *:after { box-sizing: inherit; }
+
+    body {
+      background-color: #eee;
+    }
+
+    .container {
+      margin: 15rem auto 0;
+      max-width: 70rem;
+    }
+    .input {
+      height: 5rem;
+      border-bottom: solid 1px #444;
+      font-size: 4rem;
+      margin-bottom: 5rem;
+      outline: 0;
+    }
+    .done {
+      text-decoration: line-through;
+      color: #bbb;
+    }
+
+    h1 {
+      font-size: 4.8rem;
+      margin-bottom: 10rem;
+    }
+
+    /* contentEditable placeholder */
+    [contenteditable=true]:empty:before {
+      content: attr(placeholder);
+      display: block; /* For Firefox */
+      color: #bbb;
+    }
+
+    [contenteditable="true"].single-line {
+        white-space: nowrap;
+        overflow: hidden;
+    }
+    [contenteditable="true"].single-line br {
+        display:none;
+
+    }
+    [contenteditable="true"].single-line * {
+        display:inline;
+        white-space:nowrap;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="box" class="container">
+    <h1>My Focus Today</h1>
+    <div id="one"   tabindex=1 class="input single-line" contenteditable="true" placeholder="1"> </div>
+    <div id="two"   tabindex=2 class="input single-line" contenteditable="true" placeholder="2"> </div>
+    <div id="three" tabindex=3 class="input single-line" contenteditable="true" placeholder="3"> </div>
+  </div>
+
+  <script src="/store.min.js"></script>
+  <script>
+
+// ie8 textcontent polyfill
+if (Object.defineProperty
+  && Object.getOwnPropertyDescriptor
+  && Object.getOwnPropertyDescriptor(Element.prototype, "textContent")
+  && !Object.getOwnPropertyDescriptor(Element.prototype, "textContent").get) {
+  (function() {
+    var innerText = Object.getOwnPropertyDescriptor(Element.prototype, "innerText");
+    Object.defineProperty(Element.prototype, "textContent",
+     {
+       get: function() {
+         return innerText.get.call(this);
+       },
+       set: function(s) {
+         return innerText.set.call(this, s);
+       }
+     }
+   );
+  })();
+}
+
+
+/* check if localStorage is supported and available */
+function storageAvailable(type) {
+  try {
+    var storage = window[type],
+      x = '__storage_test__';
+    storage.setItem(x, x);
+    storage.removeItem(x);
+    return true;
+  }
+  catch(e) {
+    return false;
+  }
+}
+
+
+function ready(fn) {
+  if (document.readyState != 'loading'){
+    fn();
+  } else if (document.addEventListener) {
+    document.addEventListener('DOMContentLoaded', fn);
+  } else {
+    document.attachEvent('onreadystatechange', function() {
+      if (document.readyState != 'loading')
+        fn();
+    });
+  }
+}
+
+
+function forEachElement(selector, fn) {
+  var elements = document.querySelectorAll(selector);
+  for (var i = 0; i < elements.length; i++) {
+    fn(elements[i], i);
+  }
+}
+
+function addEventListener(el, eventName, handler) {
+  if (el.addEventListener) {
+    el.addEventListener(eventName, handler);
+  } else {
+    el.attachEvent('on' + eventName, function() {
+      handler.call(el);
+    });
+  }
+}
+
+function triggerEvent(el, eventName) {
+  if (document.createEvent) {
+    var event = document.createEvent('HTMLEvents');
+    event.initEvent(eventName, true, false);
+    el.dispatchEvent(event);
+  } else {
+    el.fireEvent('on' + eventName);
+  }
+}
+
+function hasClass(el, className) {
+  return el.classList ?
+    el.classList.contains(className) :
+    new RegExp('(^| )' + className + '( |$)', 'gi').test(el.className);
+}
+
+function toggleClass(el, className) {
+  if (el.classList) {
+    el.classList.toggle(className);
+  } else {
+    var classes = el.className.split(' ');
+    var existingIndex = classes.indexOf(className);
+
+    if (existingIndex >= 0) {
+      classes.splice(existingIndex, 1);
+    }
+    else {
+      classes.push(className);
+    }
+
+    el.className = classes.join(' ');
+  }
+}
+
+function setEndOfContenteditable(contentEditableElement)
+{
+  var range,selection;
+  if(document.createRange)//Firefox, Chrome, Opera, Safari, IE 9+
+  {
+    range = document.createRange();//Create a range (a range is a like the selection but invisible)
+    range.selectNodeContents(contentEditableElement);//Select the entire contents of the element with the range
+    range.collapse(false);//collapse the range to the end point. false means collapse to end rather than the start
+    selection = window.getSelection();//get the selection object (allows you to change selection)
+    selection.removeAllRanges();//remove any selections already made
+    selection.addRange(range);//make the range you have just created the visible selection
+  }
+  else if(document.selection)//IE 8 and lower
+  {
+    range = document.body.createTextRange();//Create a range (a range is a like the selection but invisible)
+    range.moveToElementText(contentEditableElement);//Select the entire contents of the element with the range
+    range.collapse(false);//collapse the range to the end point. false means collapse to end rather than the start
+    range.select();//Select the range (make it the visible selection
+  }
+}
+
+function selectContenteditable(contentEditableElement)
+{
+  window.setTimeout(function() {
+    var sel, range;
+    if (window.getSelection && document.createRange) {
+      range = document.createRange();
+      range.selectNodeContents(contentEditableElement);
+      sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else if (document.body.createTextRange) {
+      range = document.body.createTextRange();
+      range.moveToElementText(contentEditableElement);
+      range.select();
+    }
+  }, 1);
+}
+
+
+function saveData() {
+  forEachElement('.input', function(el) {
+    store.set(el.id, {'text': el.textContent, 'done': hasClass(el, 'done')});
+  });
+}
+
+var box = document.getElementById("box");
+addEventListener(document, 'keydown', function (event) {
+  var target = event.target || event.srcElement;
+  if (event.keyCode === 13 && hasClass(target, 'input')) {
+    if (event.ctrlKey) {
+      toggleClass(target, "done");
+      saveData();
+    }
+    event.preventDefault();
+    return false;
+  }
+  if (event.keyCode === 9 && target.id === (event.shiftKey ? "one" : "three")) {
+    triggerEvent(document.getElementById(event.shiftKey ? "three" : "one"), 'focusin');
+    event.preventDefault();
+    return false;
+  }
+});
+
+addEventListener(box, 'focusin', function (event) {
+  var target = event.target || event.srcElement;
+  if (hasClass(target, 'input')) {
+    //setEndOfContenteditable(target);
+    selectContenteditable(target);
+  }
+});
+
+if (store.enabled) {
+  addEventListener(box, 'input', function() {
+    saveData();
+  });
+
+  ready(function(){
+    forEachElement('.input', function(el) {
+      data = store.get(el.id) || {'text': '', 'done': false};
+      el.textContent = data.text;
+      if (data.done) {
+        toggleClass(el, 'done');
+      }
+    });
+  })
+}
+else {
+  alert("Your data will not be saved. Either you are incognito, or your browser does not support local storage.");
+}
+
+  </script>
+</body>
+</html>
