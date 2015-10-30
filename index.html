@@ -36,7 +36,7 @@
     }
     .done {
       text-decoration: line-through;
-      color: #bbb;
+      color: #aaa;
     }
 
     h1 {
@@ -62,6 +62,15 @@
     [contenteditable="true"].single-line * {
         display:inline;
         white-space:nowrap;
+    }
+
+    ::-moz-selection {
+      color: inherit;
+      background: #ddd;
+    }
+    ::selection {
+      color: inherit;
+      background: #ddd;
     }
   </style>
 </head>
