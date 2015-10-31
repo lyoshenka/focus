@@ -24,18 +24,22 @@
 
     body {
       background-color: #eee;
+      color: #111;
     }
 
     .container {
       margin: 15rem auto 0;
-      max-width: 70rem;
+      max-width: 80rem;
+      padding: 2rem;
     }
-    .input {
+    .input, .controls {
       height: 5rem;
-      border-bottom: solid 1px #444;
       font-size: 4rem;
       margin-bottom: 5rem;
       outline: 0;
+    }
+    .input {
+      border-bottom: solid 1px #444;
     }
     .done {
       text-decoration: line-through;
@@ -45,6 +49,21 @@
     h1 {
       font-size: 4.8rem;
       margin-bottom: 10rem;
+      /*text-align: center;*/
+    }
+    a {
+      text-decoration: none;
+      color: #aaa;
+      outline: 0;
+    }
+    #clear-confirm {
+      color: #aaa;
+    }
+    #clear-no {
+      color: #0074D9;
+    }
+    #clear-yes {
+      color: #ff4136;
     }
 
     /* contentEditable placeholder */
@@ -77,6 +96,10 @@
       /*background: #ddd;*/
       background: #f7fd8c;
     }
+    .hide {
+      display: none;
+    }
+
   </style>
 </head>
 <body>
@@ -86,6 +109,10 @@
     <div id="one"   tabindex=1 class="input single-line" contenteditable="true" placeholder="1"> </div>
     <div id="two"   tabindex=2 class="input single-line" contenteditable="true" placeholder="2"> </div>
     <div id="three" tabindex=3 class="input single-line" contenteditable="true" placeholder="3"> </div>
+    <div class="controls">
+      <a href="javascript:;" id="clear" tabindex=4>clear</a>
+      <span id="clear-confirm" class="hide"><a href="javascript:;" id="clear-no">cancel</a> / <a href="javascript:;" id="clear-yes">clear all</a></span>
+    </div>
   </div>
 
   <script src="/store.min.js"></script>
@@ -112,19 +139,7 @@ if (Object.defineProperty
 }
 
 
-/* check if localStorage is supported and available */
-function storageAvailable(type) {
-  try {
-    var storage = window[type],
-      x = '__storage_test__';
-    storage.setItem(x, x);
-    storage.removeItem(x);
-    return true;
-  }
-  catch(e) {
-    return false;
-  }
-}
+// HELPERS
 
 
 function ready(fn) {
@@ -232,13 +247,18 @@ function selectContenteditable(contentEditableElement)
 }
 
 
-function saveData() {
-  forEachElement('.input', function(el) {
-    store.set(el.id, {'text': el.textContent, 'done': hasClass(el, 'done')});
-  });
-}
 
-var box = document.getElementById("box");
+
+// MAIN
+
+
+var box = document.getElementById("box"),
+    clear = document.getElementById("clear"),
+    clearConfirm = document.getElementById("clear-confirm"),
+    clearNo = document.getElementById("clear-no"),
+    clearYes = document.getElementById("clear-yes");
+
+
 addEventListener(document, 'keydown', function (event) {
   var target = event.target || event.srcElement;
   if (event.keyCode === 13 && hasClass(target, 'input')) {
@@ -264,24 +284,79 @@ addEventListener(box, 'focusin', function (event) {
   }
 });
 
+addEventListener(clear, 'click', function (event) {
+  toggleClass(clear, 'hide');
+  toggleClass(clearConfirm, 'hide');
+});
+addEventListener(clearNo, 'click', function (event) {
+  toggleClass(clear, 'hide');
+  toggleClass(clearConfirm, 'hide');
+});
+addEventListener(clearYes, 'click', function (event) {
+  toggleClass(clear, 'hide');
+  toggleClass(clearConfirm, 'hide');
+  clearData();
+  loadData();
+});
+
+
+
+
+// STORE LOAD/SAVE
+
+
+function saveData() {
+  forEachElement('.input', function(el) {
+    store.set(el.id, {'text': el.textContent, 'done': hasClass(el, 'done')});
+  });
+}
+function loadData() {
+  forEachElement('.input', function(el) {
+    data = store.get(el.id) || {'text': '', 'done': false};
+    el.textContent = data.text;
+    if (data.done) {
+      toggleClass(el, 'done');
+    }
+  });
+}
+function clearData() {
+  store.clear();
+  forEachElement('.input', function(el) {
+    if (hasClass(el, 'done')) {
+      toggleClass(el, 'done');
+    }
+  });
+}
+
+
 if (store.enabled) {
   addEventListener(box, 'input', function() {
     saveData();
   });
 
-  ready(function(){
-    forEachElement('.input', function(el) {
-      data = store.get(el.id) || {'text': '', 'done': false};
-      el.textContent = data.text;
-      if (data.done) {
-        toggleClass(el, 'done');
-      }
-    });
+  ready(function() {
+    loadData();
   })
 }
 else {
   alert("Your data will not be saved. Either you are incognito, or your browser does not support local storage.");
 }
+
+
+/* not used - check if localStorage is supported and available */
+function storageAvailable(type) {
+  try {
+    var storage = window[type],
+      x = '__storage_test__';
+    storage.setItem(x, x);
+    storage.removeItem(x);
+    return true;
+  }
+  catch(e) {
+    return false;
+  }
+}
+
 
   </script>
 </body>
