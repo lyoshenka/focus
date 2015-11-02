@@ -276,6 +276,13 @@ addEventListener(document, 'keydown', function (event) {
   }
 });
 
+addEventListener(box, 'input', function() {
+  var target = event.target || event.srcElement;
+  if (target.textContent == '' && hasClass(target, 'done')) {
+    toggleClass(target, 'done');
+  }
+});
+
 addEventListener(box, 'focusin', function (event) {
   var target = event.target || event.srcElement;
   if (hasClass(target, 'input')) {
