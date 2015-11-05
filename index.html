@@ -14,13 +14,17 @@
 
 
   <style>
+    html { box-sizing: border-box; } *, *:before, *:after { box-sizing: inherit; } /* border-box ftw! */
+
     html {
       font-size: 10px; /* nice size for rem math */
       margin-left: calc(100vw - 100%); /* jumping scrollbar fix */
     }
-
-    /* border-box ftw! */
-    html { box-sizing: border-box; } *, *:before, *:after { box-sizing: inherit; }
+    @media all and (max-width: 800px) {
+      html {
+       font-size: 7px;
+      }
+    }
 
     body {
       background-color: #eee;
@@ -28,7 +32,7 @@
     }
 
     .container {
-      margin: 15rem auto 0;
+      margin: 10vh auto 0;
       max-width: 80rem;
       padding: 2rem;
     }
